@@ -10,6 +10,8 @@ COPY composer.json composer.lock ./
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
 COPY . .
 RUN composer dump-autoload --optimize
+RUN test -f .env || cp .env.example .env
+RUN php artisan key:generate --force
 
 EXPOSE 8000
 ENTRYPOINT ["sh", "docker/entrypoint.sh"]
