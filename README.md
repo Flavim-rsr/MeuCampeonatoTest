@@ -113,7 +113,7 @@ Ferramentas de qualidade, as mesmas que rodam no CI (`.github/workflows/ci.yml`)
 ./vendor/bin/phpstan analyse --memory-limit=1G      # Larastan, nível 6
 ```
 
-A suíte tem 66 testes (151 asserções) divididos em:
+A suíte tem 69 testes (157 asserções) divididos em:
 
 - **`tests/Unit/Domain`** — regras do torneio em PHP puro, sem banco e sem HTTP: máquina de estados, sorteio, cadeia de desempate, pontuação, value objects. Rodam em milissegundos porque não tocam em infraestrutura.
 - **`tests/Feature`** — endpoints, persistência do agregado, consulta SQL de classificação e a execução real do `teste.py`.
