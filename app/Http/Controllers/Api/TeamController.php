@@ -9,6 +9,7 @@ use App\Models\Team;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
 
 class TeamController extends Controller
 {
@@ -36,6 +37,17 @@ class TeamController extends Controller
 
         return (new TeamResource($team))
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode(201)
+            ->header('Location', route('teams.show', $team));
+    }
+
+    /**
+     * Show a single team owned by the authenticated user.
+     */
+    public function show(Team $team): TeamResource
+    {
+        Gate::authorize('view', $team);
+
+        return new TeamResource($team);
     }
 }

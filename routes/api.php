@@ -24,6 +24,7 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:api')->group(function (): void {
         Route::get('teams', [TeamController::class, 'index']);
         Route::post('teams', [TeamController::class, 'store']);
+        Route::get('teams/{team}', [TeamController::class, 'show'])->name('teams.show');
 
         Route::get('championships', [ChampionshipController::class, 'index'])->name('championships.index');
         Route::post('championships', [ChampionshipController::class, 'store'])->name('championships.store');
