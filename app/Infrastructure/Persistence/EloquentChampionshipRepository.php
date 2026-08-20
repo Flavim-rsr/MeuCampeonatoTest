@@ -158,8 +158,8 @@ final class EloquentChampionshipRepository implements ChampionshipRepositoryInte
                 t.name,
                 ct.registration_order,
                 COALESCE(SUM(CASE
-                    WHEN g.home_team_id = t.id THEN g.home_score - g.away_score
-                    WHEN g.away_team_id = t.id THEN g.away_score - g.home_score
+                    WHEN g.home_team_id = t.id THEN CAST(g.home_score AS SIGNED) - CAST(g.away_score AS SIGNED)
+                    WHEN g.away_team_id = t.id THEN CAST(g.away_score AS SIGNED) - CAST(g.home_score AS SIGNED)
                 END), 0) AS points
             SQL)
             ->get()

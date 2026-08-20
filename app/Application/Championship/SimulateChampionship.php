@@ -17,8 +17,8 @@ final class SimulateChampionship
     {
         $status = $this->repository->find($championshipId)->status();
 
-        if ($status === ChampionshipStatus::Draft) {
-            throw ChampionshipRuleViolation::invalidTransition('draft');
+        if ($status === ChampionshipStatus::Draft || $status === ChampionshipStatus::Finished) {
+            throw ChampionshipRuleViolation::invalidTransition($status->value);
         }
 
         while ($status !== ChampionshipStatus::Finished) {
