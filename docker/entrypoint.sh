@@ -25,7 +25,20 @@ for key in DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD; do
 done
 
 echo "Waiting for MySQL..."
-until php artisan migrate --force 2>/dev/null; do
+attempt=0
+while ! migrate_output=$(php artisan migrate --force 2>&1); do
+    attempt=$((attempt + 1))
+
+    # Migrations legitimately fail while MySQL is still booting, so we keep
+    # retrying silently -- but a real failure (bad credentials, broken
+    # migration, etc.) would otherwise retry forever with no clue why. Surface
+    # the last error every 5 attempts so it shows up in `docker logs` without
+    # spamming the output on every retry.
+    if [ $((attempt % 5)) -eq 0 ]; then
+        echo "Still waiting for MySQL after ${attempt} attempts. Last error:"
+        echo "$migrate_output"
+    fi
+
     sleep 2
 done
 
