@@ -53,7 +53,7 @@ TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
 curl -s http://localhost:8000/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
 ```
 
-### Fluxo completo em 6 chamadas
+### Fluxo completo em 6 passos
 
 ```bash
 # 8 times
@@ -282,7 +282,8 @@ Base: `http://localhost:8000/api/v1`. Tudo que não é `register`/`login` exige 
 | `POST` | `/auth/refresh` | Renova o token do usuário autenticado. | `200` · `401` |
 | `GET` | `/auth/me` | Dados do usuário autenticado. | `200` · `401` |
 | `GET` | `/teams` | Lista os times do usuário. | `200` · `401` |
-| `POST` | `/teams` | Cria um time (nome único por usuário). | `201` · `401` · `422` |
+| `POST` | `/teams` | Cria um time (nome único por usuário). Devolve header `Location`. | `201` · `401` · `422` |
+| `GET` | `/teams/{id}` | Detalhe de um time. | `200` · `401` · `403` · `404` |
 | `POST` | `/championships` | Cria em `draft`. Aceita `tiebreaker_mode`: `default` (padrão) ou `penalties`. Devolve header `Location`. | `201` · `401` · `422` |
 | `GET` | `/championships` | Lista os campeonatos do usuário. Filtro opcional `?status=draft\|quarter_finals\|semi_finals\|finals\|finished`. | `200` · `401` |
 | `GET` | `/championships/{id}` | Campeonato completo: times com ordem de inscrição, jogos em ordem cronológica, `standings` (pontuação acumulada) e `classification` (top 4, preenchido quando `finished`). | `200` · `401` · `403` · `404` |
