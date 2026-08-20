@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChampionshipController;
+use App\Http\Controllers\Api\EnrollTeamsController;
+use App\Http\Controllers\Api\StartChampionshipController;
 use App\Http\Controllers\Api\TeamController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,5 +21,11 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:api')->group(function (): void {
         Route::get('teams', [TeamController::class, 'index']);
         Route::post('teams', [TeamController::class, 'store']);
+
+        Route::get('championships', [ChampionshipController::class, 'index'])->name('championships.index');
+        Route::post('championships', [ChampionshipController::class, 'store'])->name('championships.store');
+        Route::get('championships/{championship}', [ChampionshipController::class, 'show'])->name('championships.show');
+        Route::post('championships/{championship}/teams', EnrollTeamsController::class)->name('championships.teams.enroll');
+        Route::post('championships/{championship}/start', StartChampionshipController::class)->name('championships.start');
     });
 });
