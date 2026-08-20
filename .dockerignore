@@ -1,0 +1,24 @@
+# Keep the build context reproducible: the image must build the same way from a
+# fresh clone as it does on a machine that already ran the project locally.
+.git
+.github
+.idea
+.vscode
+
+# Installed inside the image (and host artifacts may target another PHP version).
+vendor
+node_modules
+
+# Never bake host secrets into the image; the Dockerfile copies .env.example
+# and generates APP_KEY/JWT_SECRET during the build.
+.env
+.env.backup
+.env.production
+
+# Local noise.
+.DS_Store
+.phpunit.result.cache
+.phpunit.cache
+storage/logs/*.log
+public/build
+public/hot
