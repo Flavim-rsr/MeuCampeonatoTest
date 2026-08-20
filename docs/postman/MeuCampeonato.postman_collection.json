@@ -207,7 +207,7 @@
         },
         {
             "name": "Teams",
-            "description": "Times pertencem ao usuário autenticado e têm nome único por usuário.\n\nSão necessários 8 times para um campeonato. Aqui vão dois exemplos prontos: rode o \"Criar time (Alfa)\", depois o \"Criar time (Bravo)\" e repita este último trocando o nome no corpo por Charlie, Delta, Echo, Foxtrot, Golf e Hotel. Cada resposta 201 acrescenta o id em `{{team_ids}}`, que é o corpo do request de inscrição.",
+            "description": "Times pertencem ao usuário autenticado e têm nome único por usuário.\n\nSão necessários 8 times para um campeonato. Os oito requests abaixo (Alfa a Hotel) já vêm prontos: rode a pasta inteira em sequência e cada resposta 201 acrescenta o id em `{{team_ids}}`, que termina com 8 ids e vira o corpo do request de inscrição — nada para copiar à mão.",
             "item": [
                 {
                     "name": "Criar time (Alfa)",
@@ -236,7 +236,7 @@
                                 "teams"
                             ]
                         },
-                        "description": "Cria o primeiro time. O script zera `{{team_ids}}` antes de guardar o id, para que uma nova rodada não some com os times da anterior."
+                        "description": "Cria o primeiro time da lista de 8 e zera `{{team_ids}}` antes de guardar o id, para que uma nova rodada não some com os times de uma execução anterior."
                     },
                     "event": [
                         {
@@ -282,7 +282,295 @@
                                 "teams"
                             ]
                         },
-                        "description": "Cria mais um time e acrescenta o id em `{{team_ids}}`. Rode este mesmo request seis vezes, trocando o `name` por Charlie, Delta, Echo, Foxtrot, Golf e Hotel, até `{{team_ids}}` ter 8 ids."
+                        "description": "Cria mais um time (Bravo) e acrescenta o id em `{{team_ids}}`."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
+                                    "ids.push(pm.response.json().data.id);",
+                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Criar time (Charlie)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Charlie\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/teams",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teams"
+                            ]
+                        },
+                        "description": "Cria mais um time (Charlie) e acrescenta o id em `{{team_ids}}`."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
+                                    "ids.push(pm.response.json().data.id);",
+                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Criar time (Delta)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Delta\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/teams",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teams"
+                            ]
+                        },
+                        "description": "Cria mais um time (Delta) e acrescenta o id em `{{team_ids}}`."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
+                                    "ids.push(pm.response.json().data.id);",
+                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Criar time (Echo)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Echo\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/teams",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teams"
+                            ]
+                        },
+                        "description": "Cria mais um time (Echo) e acrescenta o id em `{{team_ids}}`."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
+                                    "ids.push(pm.response.json().data.id);",
+                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Criar time (Foxtrot)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Foxtrot\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/teams",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teams"
+                            ]
+                        },
+                        "description": "Cria mais um time (Foxtrot) e acrescenta o id em `{{team_ids}}`."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
+                                    "ids.push(pm.response.json().data.id);",
+                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Criar time (Golf)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Golf\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/teams",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teams"
+                            ]
+                        },
+                        "description": "Cria mais um time (Golf) e acrescenta o id em `{{team_ids}}`."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
+                                    "ids.push(pm.response.json().data.id);",
+                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
+                                ]
+                            }
+                        }
+                    ],
+                    "response": []
+                },
+                {
+                    "name": "Criar time (Hotel)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Hotel\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/teams",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "teams"
+                            ]
+                        },
+                        "description": "Cria mais um time (Hotel) e acrescenta o id em `{{team_ids}}`."
                     },
                     "event": [
                         {
