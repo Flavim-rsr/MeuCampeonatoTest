@@ -1,34 +1,8 @@
 <?php
 
-use App\Domain\Contracts\ShufflerInterface;
 use App\Domain\Exceptions\ChampionshipRuleViolation;
-use App\Domain\Tournament\Championship;
 use App\Domain\Tournament\ChampionshipStatus;
 use App\Domain\Tournament\Phase;
-use App\Domain\Tournament\TiebreakerMode;
-
-function draft(): Championship
-{
-    return new Championship(null, 'Copa do Bairro', TiebreakerMode::Standard);
-}
-
-function identityShuffler(): ShufflerInterface
-{
-    return new class implements ShufflerInterface
-    {
-        public function shuffle(array $items): array
-        {
-            return array_values($items);
-        }
-    };
-}
-
-function enrollMany(Championship $c, int $count): void
-{
-    for ($i = 1; $i <= $count; $i++) {
-        $c->enroll($i, "Team {$i}");
-    }
-}
 
 test('enrolls teams with sequential registration order', function () {
     $c = draft();

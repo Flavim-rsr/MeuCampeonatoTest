@@ -1,5 +1,8 @@
 <?php
 
+use App\Domain\Contracts\ShufflerInterface;
+use App\Domain\Tournament\Championship;
+use App\Domain\Tournament\TiebreakerMode;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,6 +20,38 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
  // ->use(RefreshDatabase::class)
     ->in('Feature');
+
+/*
+|--------------------------------------------------------------------------
+| Domain Test Helpers
+|--------------------------------------------------------------------------
+|
+| Shared helpers for the Championship domain tests.
+|
+*/
+
+function draft(): Championship
+{
+    return new Championship(null, 'Copa do Bairro', TiebreakerMode::Standard);
+}
+
+function identityShuffler(): ShufflerInterface
+{
+    return new class implements ShufflerInterface
+    {
+        public function shuffle(array $items): array
+        {
+            return array_values($items);
+        }
+    };
+}
+
+function enrollMany(Championship $c, int $count): void
+{
+    for ($i = 1; $i <= $count; $i++) {
+        $c->enroll($i, "Team {$i}");
+    }
+}
 
 /*
 |--------------------------------------------------------------------------
