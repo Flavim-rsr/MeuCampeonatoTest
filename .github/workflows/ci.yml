@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: composer install --no-interaction --prefer-dist
-      - run: cp .env.example .env && php artisan key:generate
+      - run: cp .env.example .env && php artisan key:generate && php artisan jwt:secret --force
       - run: ./vendor/bin/pint --test
       - run: ./vendor/bin/phpstan analyse --memory-limit=1G
       - run: php artisan test

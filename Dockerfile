@@ -12,6 +12,7 @@ COPY . .
 RUN composer dump-autoload --optimize
 RUN test -f .env || cp .env.example .env
 RUN php artisan key:generate --force
+RUN php artisan jwt:secret --force
 
 EXPOSE 8000
 ENTRYPOINT ["sh", "docker/entrypoint.sh"]

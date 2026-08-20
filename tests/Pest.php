@@ -3,7 +3,9 @@
 use App\Domain\Contracts\ShufflerInterface;
 use App\Domain\Tournament\Championship;
 use App\Domain\Tournament\TiebreakerMode;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Tests\TestCase;
 
 /*
@@ -82,4 +84,14 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Build the Authorization header for an authenticated API request.
+ *
+ * @return array<string, string>
+ */
+function actingAsApi(User $user): array
+{
+    return ['Authorization' => 'Bearer '.JWTAuth::fromUser($user)];
 }
