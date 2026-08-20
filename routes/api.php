@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChampionshipController;
 use App\Http\Controllers\Api\EnrollTeamsController;
+use App\Http\Controllers\Api\RankingController;
 use App\Http\Controllers\Api\SimulateChampionshipController;
 use App\Http\Controllers\Api\SimulatePhaseController;
 use App\Http\Controllers\Api\StartChampionshipController;
@@ -31,5 +32,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('championships/{championship}/start', StartChampionshipController::class)->name('championships.start');
         Route::post('championships/{championship}/phases/simulate', SimulatePhaseController::class)->name('championships.phases.simulate');
         Route::post('championships/{championship}/simulate', SimulateChampionshipController::class)->name('championships.simulate');
+
+        Route::get('rankings', RankingController::class)->name('rankings.index');
     });
 });

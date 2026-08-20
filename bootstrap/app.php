@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Listeners are wired explicitly via Event::listen (see
+    // AppServiceProvider::boot) rather than relying on Laravel's
+    // handle()-signature auto-discovery, so discovery is disabled here to
+    // avoid registering (and firing) the same listener twice.
+    ->withEvents(discover: false)
     ->withMiddleware(function (Middleware $middleware): void {
         // This is an API-only app: there is no "login" route to redirect
         // guests to, so unauthenticated requests must never attempt one
