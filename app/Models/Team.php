@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $id
  * @property int $user_id
  * @property string $name
+ * @property-read ChampionshipTeamPivot|null $pivot
  */
 #[Fillable(['user_id', 'name'])]
 class Team extends Model

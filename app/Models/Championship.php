@@ -62,11 +62,12 @@ class Championship extends Model
     }
 
     /**
-     * @return BelongsToMany<Team, $this>
+     * @return BelongsToMany<Team, $this, ChampionshipTeamPivot>
      */
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class)
+            ->using(ChampionshipTeamPivot::class)
             ->withPivot('registration_order')
             ->orderByPivot('registration_order');
     }
