@@ -4,7 +4,38 @@ API REST que simula um campeonato de futebol no formato mata-mata com 8 times: q
 
 O projeto foi construído com Laravel 13 sobre uma arquitetura hexagonal com DDD tático: as regras do torneio vivem em PHP puro, sem dependência do framework, e o Laravel entra apenas nas bordas (HTTP, persistência, execução do script).
 
-**Índice:** [Como executar](#como-executar) · [Testes](#como-rodar-os-testes) · [Arquitetura](#arquitetura) · [Decisões](#decisões-de-arquitetura) · [Regras de negócio](#regras-de-negócio) · [Endpoints](#endpoints) · [Extensões possíveis](#extensões-possíveis)
+**Índice:** [O que foi implementado](#o-que-foi-implementado) · [Como executar](#como-executar) · [Testes](#como-rodar-os-testes) · [Arquitetura](#arquitetura) · [Decisões](#decisões-de-arquitetura) · [Regras de negócio](#regras-de-negócio) · [Endpoints](#endpoints) · [Extensões possíveis](#extensões-possíveis)
+
+---
+
+## O que foi implementado
+
+**Critérios de aceite do enunciado** — todos atendidos:
+
+- [x] Inserir os oito times participantes;
+- [x] Impossível simular com mais ou menos de oito times (respostas `409`);
+- [x] Chaveamento do campeonato (quartas sorteadas, semifinais re-sorteadas, 3º lugar, final);
+- [x] Simulação do resultado de cada partida via `teste.py`;
+- [x] Cálculo da pontuação de cada time (+1 gol marcado / −1 sofrido);
+- [x] Definição do vencedor do campeonato (1º ao 4º lugar);
+- [x] Recuperação de campeonatos anteriores (`GET /championships`, com filtro por status).
+
+**Diferenciais sugeridos no enunciado** — todos os cinco:
+
+- [x] Chamada do script Python (`teste.py`, conteúdo idêntico ao do enunciado);
+- [x] Critério de desempate diferente do solicitado (disputa de pênaltis, opt-in por campeonato);
+- [x] Testes de integração (70 testes / 159 asserções contra MySQL real);
+- [x] Containerização (Docker Compose: API + MySQL + worker);
+- [x] Collection do Postman (`docs/postman/`, arquivo único autossuficiente).
+
+**Além do enunciado** — o que acrescentei por decisão própria (cada item justificado em [Decisões](#decisões-de-arquitetura)):
+
+- Autenticação **JWT** (registro, login, refresh, `/me`) com isolamento por usuário: cada conta enxerga e manipula apenas os próprios times e campeonatos;
+- **Ranking histórico** (`GET /rankings`): títulos, vices, terceiros lugares e saldo acumulados entre campeonatos, mantido como read model;
+- **Fila com worker dedicado**: o ranking é atualizado por um listener assíncrono consumido por um container próprio, com retry;
+- **Simulação fase a fase** (`POST /phases/simulate`) além da simulação completa;
+- **Auditoria de decisão**: todo jogo registra em `decided_by` como foi decidido (placar, pontuação, pênaltis ou ordem de inscrição);
+- Arquitetura hexagonal com DDD tático, CI (Pint + Larastan nível 6 + suíte contra MySQL) a cada push.
 
 ---
 
