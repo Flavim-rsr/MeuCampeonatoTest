@@ -1,1230 +1,1253 @@
 {
-    "info": {
-        "_postman_id": "b7a1e5d4-3c62-4a17-9b8e-5d0c2f7a1e93",
-        "name": "Meu Campeonato",
-        "description": "API de simulação de campeonato de futebol (8 times, mata-mata).\n\nComo usar:\n\n1. importe também o arquivo `MeuCampeonato.postman_environment.json` e selecione o environment **Meu Campeonato — Local**;\n2. execute as pastas na ordem em que aparecem — `Auth` → `Teams` → `Championships` → `Rankings` → `Casos de erro`;\n3. o request `Login` grava o `access_token` na variável `{{token}}`, usada automaticamente pelos demais requests (autenticação Bearer definida no nível da collection).\n\nAs variáveis `{{team_ids}}` e `{{championship_id}}` também são preenchidas por scripts, então a inscrição dos times e a simulação funcionam sem copiar ids à mão.",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "auth": {
-        "type": "bearer",
-        "bearer": [
-            {
-                "key": "token",
-                "value": "{{token}}",
-                "type": "string"
-            }
-        ]
-    },
-    "variable": [
-        {
-            "key": "base_url",
-            "value": "http://localhost:8000/api/v1",
-            "type": "string"
-        }
-    ],
-    "item": [
-        {
-            "name": "Auth",
-            "description": "Registro e autenticação. Só estes dois primeiros requests dispensam token.",
-            "item": [
-                {
-                    "name": "Register",
-                    "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Avaliador Irroba\",\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\",\n    \"password_confirmation\": \"{{password}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/auth/register",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "auth",
-                                "register"
-                            ]
-                        },
-                        "description": "Cria a conta. Responde 201 com os dados do usuário (sem token — autentique em seguida com o Login).\n\nSe rodar duas vezes com o mesmo e-mail, a resposta é 422 (`email` já cadastrado): mude o valor da variável `email` no environment ou siga direto para o Login."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Login",
-                    "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/auth/login",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "auth",
-                                "login"
-                            ]
-                        },
-                        "description": "Autentica e devolve `access_token`, `token_type` e `expires_in`.\n\nO script de teste grava o token em `{{token}}` e zera `{{team_ids}}` — ou seja, cada login começa uma sessão limpa de coleta de ids de times."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.environment.set('token', pm.response.json().access_token);",
-                                    "pm.environment.set('team_ids', '[]');",
-                                    "",
-                                    "pm.test('200 OK e token recebido', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    pm.expect(pm.response.json().token_type).to.eql('bearer');",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Me",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/auth/me",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "auth",
-                                "me"
-                            ]
-                        },
-                        "description": "Dados do usuário dono do token."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Refresh",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/auth/refresh",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "auth",
-                                "refresh"
-                            ]
-                        },
-                        "description": "Troca o token atual por um novo. O script atualiza `{{token}}` com o token renovado."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.environment.set('token', pm.response.json().access_token);",
-                                    "",
-                                    "pm.test('200 OK', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Teams",
-            "description": "Times pertencem ao usuário autenticado e têm nome único por usuário.\n\nSão necessários 8 times para um campeonato. Os oito requests abaixo (Alfa a Hotel) já vêm prontos: rode a pasta inteira em sequência e cada resposta 201 acrescenta o id em `{{team_ids}}`, que termina com 8 ids e vira o corpo do request de inscrição — nada para copiar à mão.",
-            "item": [
-                {
-                    "name": "Criar time (Alfa)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Alfa\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria o primeiro time da lista de 8 e zera `{{team_ids}}` antes de guardar o id, para que uma nova rodada não some com os times de uma execução anterior."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "pm.environment.set('team_ids', JSON.stringify([pm.response.json().data.id]));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Bravo)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Bravo\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Bravo) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Charlie)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Charlie\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Charlie) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Delta)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Delta\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Delta) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Echo)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Echo\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Echo) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Foxtrot)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Foxtrot\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Foxtrot) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Golf)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Golf\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Golf) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Criar time (Hotel)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Hotel\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Cria mais um time (Hotel) e acrescenta o id em `{{team_ids}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "const ids = JSON.parse(pm.environment.get('team_ids') || '[]');",
-                                    "ids.push(pm.response.json().data.id);",
-                                    "pm.environment.set('team_ids', JSON.stringify(ids));"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Listar times",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Lista apenas os times do usuário autenticado."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Championships",
-            "description": "O ciclo de vida completo: criar em `draft`, inscrever 8 times, sortear as quartas, simular fase a fase (ou de uma vez) até `finished`.",
-            "item": [
-                {
-                    "name": "Criar campeonato",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Copa Irroba\",\n    \"tiebreaker_mode\": \"default\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/championships",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships"
-                            ]
-                        },
-                        "description": "Cria o campeonato em `draft` e devolve 201 com o header `Location` apontando para o recurso.\n\n`tiebreaker_mode` é opcional:\n\n- `default` (padrão): desempate por pontuação acumulada e, persistindo, por ordem de inscrição — exatamente o enunciado;\n- `penalties`: insere uma disputa de pênaltis entre os dois critérios.\n\nO script guarda o id em `{{championship_id}}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created com header Location', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "    pm.response.to.have.header('Location');",
-                                    "    pm.expect(pm.response.json().data.status).to.eql('draft');",
-                                    "});",
-                                    "",
-                                    "pm.environment.set('championship_id', pm.response.json().data.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Inscrever os 8 times",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"team_ids\": {{team_ids}}\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{championship_id}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{championship_id}}",
-                                "teams"
-                            ]
-                        },
-                        "description": "Inscreve os times na ordem do array — e essa ordem vira a `registration_order`, último critério de desempate.\n\n`{{team_ids}}` foi preenchida pelos requests da pasta Teams; confira no environment que ela tem 8 ids antes de enviar."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK com 8 times inscritos', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    pm.expect(pm.response.json().data.teams).to.have.lengthOf(8);",
-                                    "    pm.expect(pm.response.json().data.teams[0].registration_order).to.eql(1);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Iniciar (sortear as quartas)",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{championship_id}}/start",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{championship_id}}",
-                                "start"
-                            ]
-                        },
-                        "description": "Embaralha os 8 times, monta as 4 quartas de final e move o campeonato para `quarter_finals`. Exige exatamente 8 times inscritos — caso contrário, 409."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK, status quarter_finals e 4 jogos sorteados', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    pm.expect(pm.response.json().data.status).to.eql('quarter_finals');",
-                                    "    pm.expect(pm.response.json().data.games).to.have.lengthOf(4);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Simular a fase atual",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{championship_id}}/phases/simulate",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{championship_id}}",
-                                "phases",
-                                "simulate"
-                            ]
-                        },
-                        "description": "Joga apenas a fase corrente e já sorteia a próxima. Rodando aqui a partir de `quarter_finals`: os 4 jogos são decididos e as semifinais são **re-sorteadas** entre os 4 vencedores (não é chaveamento fixo — é o que o enunciado descreve).\n\nRepetir a chamada avança para `finals` e, na terceira vez, joga disputa de terceiro lugar e final na mesma requisição, encerrando o campeonato. Em `draft` ou `finished` responde 409."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK e fase seguinte sorteada', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    pm.expect(pm.response.json().data.status).to.not.eql('quarter_finals');",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Simular até o fim",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{championship_id}}/simulate",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{championship_id}}",
-                                "simulate"
-                            ]
-                        },
-                        "description": "Simula da fase atual até `finished`, devolvendo os 8 jogos e a `classification` (1º a 4º). É o caminho curto: dá para chamar logo depois do `start`, sem passar pelo request anterior.\n\nSe o `teste.py` falhar (ausente, timeout, saída não numérica), a resposta é 502."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK, finished, 8 jogos e campeão definido', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    const data = pm.response.json().data;",
-                                    "    pm.expect(data.status).to.eql('finished');",
-                                    "    pm.expect(data.games).to.have.lengthOf(8);",
-                                    "    pm.expect(data.classification.first).to.not.eql(null);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Detalhe do campeonato",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{championship_id}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{championship_id}}"
-                            ]
-                        },
-                        "description": "Estado completo: times com ordem de inscrição, os jogos em ordem cronológica (quartas → semis → terceiro lugar → final) com `decided_by` de cada um, a pontuação acumulada em `standings` e a `classification` final.\n\nCampeonato de outro usuário responde 403; id inexistente, 404."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Listar campeonatos (filtro por status)",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships?status=finished",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships"
-                            ],
-                            "query": [
-                                {
-                                    "key": "status",
-                                    "value": "finished",
-                                    "description": "Opcional: draft, quarter_finals, semi_finals, finals ou finished. Remova o parâmetro para listar todos."
-                                }
-                            ]
-                        },
-                        "description": "Lista os campeonatos do usuário autenticado, com filtro opcional por status."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Rankings",
-            "description": "Read model histórico, alimentado pelo listener do evento `ChampionshipFinished`.",
-            "item": [
-                {
-                    "name": "Ranking histórico",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/rankings",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "rankings"
-                            ]
-                        },
-                        "description": "Times do usuário com campeonatos disputados, títulos, vices, terceiros lugares, gols pró/contra e saldo — ordenados por títulos, vices, terceiros lugares e saldo de gols.\n\nSó aparecem times que já participaram de um campeonato encerrado. Gols de disputa de pênaltis não entram na contagem."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('200 OK e um campeão no topo', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "    pm.expect(pm.response.json().data[0].titles).to.be.above(0);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Casos de erro",
-            "description": "Os contratos de erro da API.\n\nA regra que separa 409 de 422: **422 é payload inválido** (o cliente corrige e repete), **409 é estado incompatível** (o payload está certo, mas o recurso não está na situação necessária).\n\nSobre o **403**: não dá para reproduzir com um usuário só. Para ver: rode o `Register`/`Login` com outro e-mail (mude a variável `email` no environment), o que troca o `{{token}}`, e então chame `Detalhe do campeonato` — como `{{championship_id}}` pertence ao primeiro usuário, a resposta é 403. Depois volte o e-mail original e faça login de novo.\n\nO **502** cobre falha do serviço externo de placares: se o `teste.py` for removido, falhar ou imprimir algo que não sejam dois inteiros, qualquer simulação responde 502.",
-            "item": [
-                {
-                    "name": "401 — requisição sem token",
-                    "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/teams",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "teams"
-                            ]
-                        },
-                        "description": "Endpoint protegido sem header `Authorization`: 401 com `{\"message\": \"Unauthenticated.\"}`."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('401 Unauthorized', function () {",
-                                    "    pm.response.to.have.status(401);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "422 — payload inválido",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"\",\n    \"tiebreaker_mode\": \"cara_ou_coroa\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/championships",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships"
-                            ]
-                        },
-                        "description": "Nome vazio e modo de desempate inexistente: 422 com o objeto `errors` detalhando os dois campos. Nada é criado."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('422 com erros em name e tiebreaker_mode', function () {",
-                                    "    pm.response.to.have.status(422);",
-                                    "    pm.expect(pm.response.json().errors).to.have.property('name');",
-                                    "    pm.expect(pm.response.json().errors).to.have.property('tiebreaker_mode');",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "Preparação — campeonato vazio",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"name\": \"Copa sem times\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/championships",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships"
-                            ]
-                        },
-                        "description": "Cria um campeonato sem nenhum time inscrito e guarda o id em `{{empty_championship_id}}`, usado pelo próximo request. Este aqui é um 201 normal — é só a montagem do cenário."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('201 Created', function () {",
-                                    "    pm.response.to.have.status(201);",
-                                    "});",
-                                    "",
-                                    "pm.environment.set('empty_championship_id', pm.response.json().data.id);"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "409 — iniciar sem 8 times",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{empty_championship_id}}/start",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{empty_championship_id}}",
-                                "start"
-                            ]
-                        },
-                        "description": "A regra \"exatamente 8 times\" vive no agregado `Championship`, não em uma validação de request — por isso a resposta é 409 e não 422."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('409 Conflict', function () {",
-                                    "    pm.response.to.have.status(409);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "409 — simular campeonato já encerrado",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/{{championship_id}}/simulate",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "{{championship_id}}",
-                                "simulate"
-                            ]
-                        },
-                        "description": "Repete a simulação do campeonato que já terminou na pasta Championships. A máquina de estados não permite sair de `finished`, então a resposta é 409 — e os resultados já gravados ficam intactos."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('409 Conflict', function () {",
-                                    "    pm.response.to.have.status(409);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                },
-                {
-                    "name": "404 — campeonato inexistente",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/championships/999999",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "championships",
-                                "999999"
-                            ]
-                        },
-                        "description": "Id que não existe: 404."
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('404 Not Found', function () {",
-                                    "    pm.response.to.have.status(404);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ],
-                    "response": []
-                }
-            ]
-        }
+  "info": {
+    "_postman_id": "b7a1e5d4-3c62-4a17-9b8e-5d0c2f7a1e93",
+    "name": "Meu Campeonato",
+    "description": "API de simulação de campeonato de futebol (8 times, mata-mata).\n\nComo usar:\n\n1. importe também o arquivo `MeuCampeonato.postman_environment.json` e selecione o environment **Meu Campeonato — Local**;\n2. execute as pastas na ordem em que aparecem — `Auth` → `Teams` → `Championships` → `Rankings` → `Casos de erro`;\n3. o request `Login` grava o `access_token` na variável `{{token}}`, usada automaticamente pelos demais requests (autenticação Bearer definida no nível da collection).\n\nAs variáveis `{{team_ids}}` e `{{championship_id}}` também são preenchidas por scripts, então a inscrição dos times e a simulação funcionam sem copiar ids à mão.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
     ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1"
+    },
+    {
+      "key": "email",
+      "value": "avaliador@irroba.com.br"
+    },
+    {
+      "key": "password",
+      "value": "secret123"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "team_ids",
+      "value": "[]"
+    },
+    {
+      "key": "championship_id",
+      "value": ""
+    },
+    {
+      "key": "empty_championship_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Registro e autenticação. Só estes dois primeiros requests dispensam token.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Avaliador Irroba\",\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\",\n    \"password_confirmation\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Cria a conta. Responde 201 com os dados do usuário (sem token — autentique em seguida com o Login).\n\nSe rodar duas vezes com o mesmo e-mail, a resposta é 422 (`email` já cadastrado): mude o valor da variável `email` no environment ou siga direto para o Login."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"{{email}}\",\n    \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Autentica e devolve `access_token`, `token_type` e `expires_in`.\n\nO script de teste grava o token em `{{token}}` e zera `{{team_ids}}` — ou seja, cada login começa uma sessão limpa de coleta de ids de times."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('token', pm.response.json().access_token);",
+                  "pm.collectionVariables.set('team_ids', '[]');",
+                  "",
+                  "pm.test('200 OK e token recebido', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().token_type).to.eql('bearer');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Dados do usuário dono do token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Troca o token atual por um novo. O script atualiza `{{token}}` com o token renovado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('token', pm.response.json().access_token);",
+                  "",
+                  "pm.test('200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "description": "Times pertencem ao usuário autenticado e têm nome único por usuário.\n\nSão necessários 8 times para um campeonato. Os oito requests abaixo (Alfa a Hotel) já vêm prontos: rode a pasta inteira em sequência e cada resposta 201 acrescenta o id em `{{team_ids}}`, que termina com 8 ids e vira o corpo do request de inscrição — nada para copiar à mão.",
+      "item": [
+        {
+          "name": "Criar time (Alfa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Alfa\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria o primeiro time da lista de 8 e zera `{{team_ids}}` antes de guardar o id, para que uma nova rodada não some com os times de uma execução anterior."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify([pm.response.json().data.id]));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Bravo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Bravo\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Bravo) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Charlie)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Charlie\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Charlie) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Delta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Delta\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Delta) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Echo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Echo\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Echo) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Foxtrot)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Foxtrot\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Foxtrot) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Golf)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Golf\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Golf) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Criar time (Hotel)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Hotel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Cria mais um time (Hotel) e acrescenta o id em `{{team_ids}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const ids = JSON.parse(pm.collectionVariables.get('team_ids') || '[]');",
+                  "ids.push(pm.response.json().data.id);",
+                  "pm.collectionVariables.set('team_ids', JSON.stringify(ids));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar times",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Lista apenas os times do usuário autenticado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Championships",
+      "description": "O ciclo de vida completo: criar em `draft`, inscrever 8 times, sortear as quartas, simular fase a fase (ou de uma vez) até `finished`.",
+      "item": [
+        {
+          "name": "Criar campeonato",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Copa Irroba\",\n    \"tiebreaker_mode\": \"default\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/championships",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships"
+              ]
+            },
+            "description": "Cria o campeonato em `draft` e devolve 201 com o header `Location` apontando para o recurso.\n\n`tiebreaker_mode` é opcional:\n\n- `default` (padrão): desempate por pontuação acumulada e, persistindo, por ordem de inscrição — exatamente o enunciado;\n- `penalties`: insere uma disputa de pênaltis entre os dois critérios.\n\nO script guarda o id em `{{championship_id}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created com header Location', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    pm.response.to.have.header('Location');",
+                  "    pm.expect(pm.response.json().data.status).to.eql('draft');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('championship_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Inscrever os 8 times",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"team_ids\": {{team_ids}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/championships/{{championship_id}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{championship_id}}",
+                "teams"
+              ]
+            },
+            "description": "Inscreve os times na ordem do array — e essa ordem vira a `registration_order`, último critério de desempate.\n\n`{{team_ids}}` foi preenchida pelos requests da pasta Teams; confira no environment que ela tem 8 ids antes de enviar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK com 8 times inscritos', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.teams).to.have.lengthOf(8);",
+                  "    pm.expect(pm.response.json().data.teams[0].registration_order).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Iniciar (sortear as quartas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/{{championship_id}}/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{championship_id}}",
+                "start"
+              ]
+            },
+            "description": "Embaralha os 8 times, monta as 4 quartas de final e move o campeonato para `quarter_finals`. Exige exatamente 8 times inscritos — caso contrário, 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK, status quarter_finals e 4 jogos sorteados', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.status).to.eql('quarter_finals');",
+                  "    pm.expect(pm.response.json().data.games).to.have.lengthOf(4);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Simular a fase atual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/{{championship_id}}/phases/simulate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{championship_id}}",
+                "phases",
+                "simulate"
+              ]
+            },
+            "description": "Joga apenas a fase corrente e já sorteia a próxima. Rodando aqui a partir de `quarter_finals`: os 4 jogos são decididos e as semifinais são **re-sorteadas** entre os 4 vencedores (não é chaveamento fixo — é o que o enunciado descreve).\n\nRepetir a chamada avança para `finals` e, na terceira vez, joga disputa de terceiro lugar e final na mesma requisição, encerrando o campeonato. Em `draft` ou `finished` responde 409."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK e fase seguinte sorteada', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data.status).to.not.eql('quarter_finals');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Simular até o fim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/{{championship_id}}/simulate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{championship_id}}",
+                "simulate"
+              ]
+            },
+            "description": "Simula da fase atual até `finished`, devolvendo os 8 jogos e a `classification` (1º a 4º). É o caminho curto: dá para chamar logo depois do `start`, sem passar pelo request anterior.\n\nSe o `teste.py` falhar (ausente, timeout, saída não numérica), a resposta é 502."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK, finished, 8 jogos e campeão definido', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.status).to.eql('finished');",
+                  "    pm.expect(data.games).to.have.lengthOf(8);",
+                  "    pm.expect(data.classification.first).to.not.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Detalhe do campeonato",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/{{championship_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{championship_id}}"
+              ]
+            },
+            "description": "Estado completo: times com ordem de inscrição, os jogos em ordem cronológica (quartas → semis → terceiro lugar → final) com `decided_by` de cada um, a pontuação acumulada em `standings` e a `classification` final.\n\nCampeonato de outro usuário responde 403; id inexistente, 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar campeonatos (filtro por status)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships?status=finished",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "finished",
+                  "description": "Opcional: draft, quarter_finals, semi_finals, finals ou finished. Remova o parâmetro para listar todos."
+                }
+              ]
+            },
+            "description": "Lista os campeonatos do usuário autenticado, com filtro opcional por status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rankings",
+      "description": "Read model histórico, alimentado pelo listener do evento `ChampionshipFinished`.",
+      "item": [
+        {
+          "name": "Ranking histórico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/rankings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "rankings"
+              ]
+            },
+            "description": "Times do usuário com campeonatos disputados, títulos, vices, terceiros lugares, gols pró/contra e saldo — ordenados por títulos, vices, terceiros lugares e saldo de gols.\n\nSó aparecem times que já participaram de um campeonato encerrado. Gols de disputa de pênaltis não entram na contagem."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK e um campeão no topo', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().data[0].titles).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Casos de erro",
+      "description": "Os contratos de erro da API.\n\nA regra que separa 409 de 422: **422 é payload inválido** (o cliente corrige e repete), **409 é estado incompatível** (o payload está certo, mas o recurso não está na situação necessária).\n\nSobre o **403**: não dá para reproduzir com um usuário só. Para ver: rode o `Register`/`Login` com outro e-mail (mude a variável `email` no environment), o que troca o `{{token}}`, e então chame `Detalhe do campeonato` — como `{{championship_id}}` pertence ao primeiro usuário, a resposta é 403. Depois volte o e-mail original e faça login de novo.\n\nO **502** cobre falha do serviço externo de placares: se o `teste.py` for removido, falhar ou imprimir algo que não sejam dois inteiros, qualquer simulação responde 502.",
+      "item": [
+        {
+          "name": "401 — requisição sem token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/teams",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "teams"
+              ]
+            },
+            "description": "Endpoint protegido sem header `Authorization`: 401 com `{\"message\": \"Unauthenticated.\"}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "422 — payload inválido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"\",\n    \"tiebreaker_mode\": \"cara_ou_coroa\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/championships",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships"
+              ]
+            },
+            "description": "Nome vazio e modo de desempate inexistente: 422 com o objeto `errors` detalhando os dois campos. Nada é criado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422 com erros em name e tiebreaker_mode', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "    pm.expect(pm.response.json().errors).to.have.property('name');",
+                  "    pm.expect(pm.response.json().errors).to.have.property('tiebreaker_mode');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Preparação — campeonato vazio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Copa sem times\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/championships",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships"
+              ]
+            },
+            "description": "Cria um campeonato sem nenhum time inscrito e guarda o id em `{{empty_championship_id}}`, usado pelo próximo request. Este aqui é um 201 normal — é só a montagem do cenário."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('empty_championship_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "409 — iniciar sem 8 times",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/{{empty_championship_id}}/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{empty_championship_id}}",
+                "start"
+              ]
+            },
+            "description": "A regra \"exatamente 8 times\" vive no agregado `Championship`, não em uma validação de request — por isso a resposta é 409 e não 422."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "409 — simular campeonato já encerrado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/{{championship_id}}/simulate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "{{championship_id}}",
+                "simulate"
+              ]
+            },
+            "description": "Repete a simulação do campeonato que já terminou na pasta Championships. A máquina de estados não permite sair de `finished`, então a resposta é 409 — e os resultados já gravados ficam intactos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "404 — campeonato inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/championships/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "championships",
+                "999999"
+              ]
+            },
+            "description": "Id que não existe: 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
 }
