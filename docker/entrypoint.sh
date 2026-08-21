@@ -20,9 +20,24 @@ sync_env() {
     fi
 }
 
-for key in DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD; do
+for key in DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD QUEUE_CONNECTION; do
     sync_env "$key"
 done
+
+# The worker container reuses this image and entrypoint but must not race the
+# app container's migrations: it only waits until the schema is reachable
+# (migrate:status needs both the connection and the migrations table) and then
+# consumes the queue. CLI processes see compose-injected env directly, so the
+# serve-specific .env sync above is merely harmless here.
+if [ "${CONTAINER_ROLE:-app}" = "worker" ]; then
+    echo "Waiting for database..."
+    until php artisan migrate:status >/dev/null 2>&1; do
+        sleep 2
+    done
+
+    echo "Starting queue worker"
+    exec php artisan queue:work --tries=3 --backoff=5
+fi
 
 echo "Waiting for MySQL..."
 attempt=0

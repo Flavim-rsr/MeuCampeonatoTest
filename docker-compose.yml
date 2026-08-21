@@ -9,6 +9,15 @@ services:
       mysql:
         condition: service_healthy
 
+  worker:
+    build: .
+    environment:
+      DB_HOST: mysql
+      CONTAINER_ROLE: worker
+    depends_on:
+      mysql:
+        condition: service_healthy
+
   mysql:
     image: mysql:8.4
     ports:
