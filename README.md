@@ -24,7 +24,8 @@ O `--build` na primeira execução leva alguns minutos (instala as dependências
 
 1. o container `mysql` sobe e cria os schemas `meu_campeonato` e `meu_campeonato_test` (via `docker/mysql-init/`);
 2. o build da imagem `app` já rodou `php artisan key:generate` e `php artisan jwt:secret`, então `APP_KEY` e `JWT_SECRET` estão preenchidos;
-3. o entrypoint (`docker/entrypoint.sh`) alinha as variáveis `DB_*` do container com o `.env`, fica tentando `php artisan migrate --force` até o banco aceitar conexões e só então sobe o servidor.
+3. o entrypoint (`docker/entrypoint.sh`) alinha as variáveis `DB_*` do container com o `.env`, fica tentando `php artisan migrate --force` até o banco aceitar conexões e só então sobe o servidor;
+4. o container `worker` (mesma imagem, `CONTAINER_ROLE=worker`) espera o schema ficar acessível e sobe `php artisan queue:work` para consumir a fila — é ele quem atualiza o ranking histórico quando um campeonato termina.
 
 O `cp .env.example .env` do passo acima é para uso local (rodar testes ou `artisan` a partir da máquina host): a imagem gera o próprio `.env` durante o build e não copia o do host.
 
@@ -113,7 +114,7 @@ Ferramentas de qualidade, as mesmas que rodam no CI (`.github/workflows/ci.yml`)
 ./vendor/bin/phpstan analyse --memory-limit=1G      # Larastan, nível 6
 ```
 
-A suíte tem 69 testes (157 asserções) divididos em:
+A suíte tem 70 testes (159 asserções) divididos em:
 
 - **`tests/Unit/Domain`** — regras do torneio em PHP puro, sem banco e sem HTTP: máquina de estados, sorteio, cadeia de desempate, pontuação, value objects. Rodam em milissegundos porque não tocam em infraestrutura.
 - **`tests/Feature`** — endpoints, persistência do agregado, consulta SQL de classificação e a execução real do `teste.py`.
@@ -173,7 +174,7 @@ A regra é uma só: **as setas de dependência apontam para dentro**. `app/Domai
 | Strategy + Chain of Responsibility | `Tiebreaker/*` | Cada critério de desempate é uma classe que decide ou devolve `null` e passa adiante. Trocar a ordem ou incluir um critério novo não mexe no agregado. |
 | Strategy (pontuação) | `ScoringPolicyInterface` | A fórmula "+1 marcado / −1 sofrido" é uma política, não uma verdade universal. Ver [Extensões possíveis](#extensões-possíveis). |
 | Ports & Adapters | `ScoreGeneratorInterface`, `ShufflerInterface`, `ChampionshipRepositoryInterface` | As três dependências voláteis do domínio — script externo, aleatoriedade e banco — são interfaces declaradas pelo domínio e implementadas pela infraestrutura. |
-| Domain Event + Read Model | `ChampionshipFinished` → `UpdateTeamStatistics` → `team_statistics` | O ranking histórico é um efeito colateral do fim do campeonato, não responsabilidade da simulação. `GET /rankings` lê uma tabela pronta, sem varrer jogos. |
+| Domain Event + Read Model | `ChampionshipFinished` → `UpdateTeamStatistics` → `team_statistics` | O ranking histórico é um efeito colateral do fim do campeonato, não responsabilidade da simulação. `GET /rankings` lê uma tabela pronta, sem varrer jogos. O listener é processado em fila (ver [Decisões](#decisões-de-arquitetura)). |
 | Repository | `EloquentChampionshipRepository` | Reconstitui o agregado a partir de 3 tabelas e o salva de volta em uma operação. O domínio conversa com uma interface de 3 métodos. |
 
 ### O que deliberadamente não usei
@@ -206,6 +207,8 @@ Tão importante quanto escolher padrões é saber quando eles custam mais do que
 Tem uma pegadinha nessa escolha que vale registrar: o `serve` repassa ao servidor embutido do PHP apenas uma lista fixa de variáveis de ambiente (`ServeCommand::$passthroughVariables`), então o `DB_HOST=mysql` que o Compose injeta chega ao artisan (as migrations rodavam) mas não às requisições HTTP, que caíam no `DB_HOST` do `.env` da imagem. Por isso o `docker/entrypoint.sh` grava as variáveis `DB_*` do ambiente no `.env` antes de subir o servidor — CLI e HTTP passam a falar com o mesmo banco.
 
 **Modo default fiel ao enunciado, extras opt-in.** O desempate descrito no enunciado é pontuação acumulada e, persistindo o empate, ordem de inscrição. É esse o comportamento padrão. A disputa de pênaltis — mais realista e mais interessante de implementar — existe, mas só entra se o campeonato for criado com `tiebreaker_mode: "penalties"`. Assim eu demonstro a extensibilidade da cadeia de desempate sem que quem avalia precise adivinhar por que o resultado não bate com o enunciado.
+
+**Ranking em fila, não na requisição.** Atualizar o `team_statistics` é consequência do campeonato terminar, não parte da transação de simular: o usuário que chamou `/simulate` não precisa esperar a estatística histórica ser recalculada, e uma falha nesse recálculo não deve derrubar uma simulação que já aconteceu. Por isso o `UpdateTeamStatistics` implementa `ShouldQueue`: o evento `ChampionshipFinished` (que carrega apenas o id do campeonato e as posições finais — payload pequeno e serializável) vira um job na fila, e um container dedicado (`worker`, rodando `queue:work`) o consome com retry automático (`tries=3`, `backoff=5`); o que estourar as tentativas fica em `failed_jobs` para reprocesso. O driver é `database` — fila na própria tabela `jobs` do MySQL, sem adicionar Redis ao compose só para impressionar; como o Laravel abstrai o driver, trocar para Redis/SQS em produção é mudar `QUEUE_CONNECTION`, não código. Nos testes a suíte roda com `QUEUE_CONNECTION=sync` (o job executa inline, mantendo os testes de ranking determinísticos) e um teste com `Queue::fake()` prova que o listener é de fato enfileirado. O custo assumido é consistência eventual: por alguns instantes após o fim do campeonato, `GET /rankings` pode ainda não refletir o título — aceitável para estatística histórica.
 
 **JWT em vez de Sanctum.** A API é stateless e consumida por cliente HTTP puro, sem cookies nem SPA de mesmo domínio. O `php-open-source-saver/jwt-auth` entrega token autocontido com `refresh`, que é exatamente o modelo de sessão que uma API deste tipo precisa.
 
