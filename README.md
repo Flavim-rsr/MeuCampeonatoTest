@@ -35,7 +35,8 @@ O projeto foi construído com Laravel 13 sobre uma arquitetura hexagonal com DDD
 - **Fila com worker dedicado**: o ranking é atualizado por um listener assíncrono consumido por um container próprio, com retry;
 - **Simulação fase a fase** (`POST /phases/simulate`) além da simulação completa;
 - **Auditoria de decisão**: todo jogo registra em `decided_by` como foi decidido (placar, pontuação, pênaltis ou ordem de inscrição);
-- Arquitetura hexagonal com DDD tático, CI (Pint + Larastan nível 6 + suíte contra MySQL) a cada push.
+- Arquitetura hexagonal com DDD tático, CI (Pint + Larastan nível 6 + suíte contra MySQL) a cada push;
+- **Front-end de demonstração** em React (Vite), em repositório próprio: [MeuCampeonatoFront](https://github.com/Flavim-rsr/MeuCampeonatoFront) — consome esta API de ponta a ponta (login, times, campeonatos, simulação fase a fase, chaveamento, pódio e ranking). Não faz parte do escopo pedido; existe para visualizar a API funcionando.
 
 ---
 
