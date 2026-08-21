@@ -7,10 +7,18 @@ use App\Models\Championship;
 use App\Models\Game;
 use App\Models\Team;
 use App\Models\TeamStatistic;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Collection;
 
-class UpdateTeamStatistics
+class UpdateTeamStatistics implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    public int $tries = 3;
+
+    public int $backoff = 5;
+
     /**
      * Update the historical team_statistics read model when a championship
      * finishes: every enrolled team gets +1 championships_played and its

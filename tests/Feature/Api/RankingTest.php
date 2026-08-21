@@ -1,10 +1,13 @@
 <?php
 
 use App\Domain\Contracts\ScoreGeneratorInterface;
+use App\Listeners\UpdateTeamStatistics;
 use App\Models\Championship;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Events\CallQueuedListener;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\Doubles\FakeScoreGenerator;
 
 uses(RefreshDatabase::class);
@@ -25,4 +28,21 @@ test('finishing a championship feeds the historical ranking', function () {
         ->and(collect($response->json('data'))->sum('titles'))->toBe(1)
         ->and(collect($response->json('data'))->sum('championships_played'))->toBe(8)
         ->and($response->json('data.0.titles'))->toBe(1);
+});
+
+test('the ranking update is queued instead of running in the request', function () {
+    Queue::fake();
+    app()->instance(ScoreGeneratorInterface::class, new FakeScoreGenerator([[2, 0], [1, 3]]));
+    $user = User::factory()->create();
+    $teams = Team::factory()->count(8)->for($user)->create();
+    $championship = Championship::factory()->for($user)->create();
+    $this->postJson("/api/v1/championships/{$championship->id}/teams",
+        ['team_ids' => $teams->pluck('id')->all()], actingAsApi($user));
+    $this->postJson("/api/v1/championships/{$championship->id}/start", [], actingAsApi($user));
+
+    $this->postJson("/api/v1/championships/{$championship->id}/simulate", [], actingAsApi($user))
+        ->assertOk();
+
+    Queue::assertPushed(CallQueuedListener::class,
+        fn (CallQueuedListener $job): bool => $job->class === UpdateTeamStatistics::class);
 });
