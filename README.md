@@ -49,7 +49,7 @@ curl -s -X POST http://localhost:8000/api/v1/auth/register \
 # 2. autenticar e guardar o token
 TOKEN=$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"avaliador@irroba.com.br","password":"secret123"}' | php -r 'echo json_decode(stream_get_contents(STDIN))->access_token;')
+  -d '{"email":"avaliador@irroba.com.br","password":"secret123"}' | sed -E 's/.*"access_token":"([^"]+)".*/\1/')
 
 curl -s http://localhost:8000/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
 ```
@@ -75,12 +75,15 @@ curl -s -X POST http://localhost:8000/api/v1/championships/1/teams \
   -d '{"team_ids":[1,2,3,4,5,6,7,8]}'
 curl -s -X POST http://localhost:8000/api/v1/championships/1/start    -H "Authorization: Bearer $TOKEN"
 curl -s -X POST http://localhost:8000/api/v1/championships/1/simulate -H "Authorization: Bearer $TOKEN"
+
+# o ranking é preenchido pelo worker da fila logo após o fim do campeonato —
+# se vier vazio, repita o GET um instante depois
 curl -s      http://localhost:8000/api/v1/rankings                    -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Postman
 
-Em `docs/postman/` estão a collection e o environment (formato v2.1). Importe os dois arquivos, selecione o environment **Meu Campeonato — Local** e execute as pastas na ordem em que aparecem: `Auth` → `Teams` → `Championships` → `Rankings` → `Casos de erro`. O request de login já grava o `access_token` na variável `{{token}}`, então os demais requests funcionam sem copiar nada à mão.
+Em `docs/postman/` está a collection (formato v2.1). Ela é autossuficiente — `base_url`, `token` e os ids ficam em variáveis da própria collection —, então basta **importar um único arquivo**, sem environment. Execute as pastas na ordem em que aparecem: `Auth` → `Teams` → `Championships` → `Rankings` → `Casos de erro`. O request de login já grava o `access_token` na variável `{{token}}`, então os demais requests funcionam sem copiar nada à mão.
 
 ### Rodando sem Docker (opcional)
 
@@ -308,7 +311,7 @@ Erros seguem sempre a mesma forma: `{"message": "..."}` — acrescido de `errors
 
 **Outros formatos de torneio.** Hoje o agregado assume 8 times e chaveamento simples. Grupos ou pontos corridos exigiriam generalizar `Championship::start()` e o avanço de fases — a cadeia de desempate, a política de pontuação e as portas continuariam intactas.
 
-**Simulação assíncrona.** `POST /simulate` executa até 8 jogos, cada um chamando um processo Python. Se o script ficasse lento, a chamada viraria um job em fila devolvendo `202 Accepted` com um recurso de status; o `UpdateTeamStatistics`, que hoje é síncrono de propósito, passaria a implementar `ShouldQueue`.
+**Simulação assíncrona.** `POST /simulate` executa até 8 jogos, cada um chamando um processo Python. Se o script ficasse lento, a chamada viraria um job em fila devolvendo `202 Accepted` com um recurso de status para consulta. A infraestrutura para isso já está de pé — fila `database` e container `worker`, hoje consumidos pelo `UpdateTeamStatistics` ([Decisões](#decisões-de-arquitetura)); faltaria apenas mover o caso de uso para um job e desenhar o contrato de status.
 
 ---
 
